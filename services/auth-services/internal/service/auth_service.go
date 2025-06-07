@@ -2,11 +2,11 @@ package service
 
 import (
 	"errors"
-	"time"
+	"lifekost/auth-services/internal/repository"
 
-	"github.com/christyuda/lifekost_backend/libs/auth" // JWT helper dari libs/auth
-	"github.com/christyuda/lifekost_backend/services/auth-service/internal/domain"
-	"github.com/christyuda/lifekost_backend/services/auth-service/internal/repository"
+	"lifekost/auth-services/pkg/domain"
+	"lifekost/libs/auth"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -75,9 +75,9 @@ func (s *authService) Login(req domain.LoginRequest) (*domain.LoginResponse, err
 
 	// Buat klaim token JWT
 	claims := domain.JWTClaims{
-		UserID:   user.ID,
-		Username: user.Email,
-		Role:     "user", // bisa disesuaikan jika pakai role
+		UserID: user.ID,
+		Email:  user.Email,
+		Role:   "user", // bisa disesuaikan jika pakai role
 	}
 
 	// Generate token JWT

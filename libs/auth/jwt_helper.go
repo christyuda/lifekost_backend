@@ -4,7 +4,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/christyuda/lifekost_backend/services/auth-services/pkg/domain"
+	"lifekost/auth-services/pkg/domain"
+
 	"github.com/golang-jwt/jwt/v5"
 )
 

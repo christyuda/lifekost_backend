@@ -3,8 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
-
-	"github.com/christyuda/lifekost_backend/services/auth-service/internal/domain"
+	"lifekost/auth-services/pkg/domain"
 )
 
 type UserRepository interface {
