@@ -21,12 +21,14 @@ func NewUserRepository(db *sql.DB) UserRepository {
 
 func (r *userRepo) FindByEmail(email string) (*domain.User, error) {
 	var user domain.User
-	query := "SELECT id, email, password, created_at FROM users WHERE email=$1"
+	query := "SELECT id, username, email, password, role, created_at FROM users WHERE email=$1"
 
 	err := r.db.QueryRow(query, email).Scan(
 		&user.ID,
 		&user.Email,
+		&user.Username,
 		&user.Password,
+		&user.Role,
 		&user.CreatedAt,
 	)
 
@@ -41,9 +43,8 @@ func (r *userRepo) FindByEmail(email string) (*domain.User, error) {
 }
 
 func (r *userRepo) Create(user *domain.User) error {
-	query := "INSERT INTO users (email, password, created_at) VALUES ($1, $2, $3) RETURNING id"
-
-	err := r.db.QueryRow(query, user.Email, user.Password, user.CreatedAt).
+	query := "INSERT INTO users (username, email, password, role, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING id"
+	err := r.db.QueryRow(query, user.Username, user.Email, user.Password, user.Role, user.CreatedAt).
 		Scan(&user.ID)
 
 	return err

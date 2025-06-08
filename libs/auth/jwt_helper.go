@@ -1,18 +1,23 @@
 package auth
 
 import (
+	"errors"
 	"os"
 	"time"
-
-	"lifekost/auth-services/pkg/domain"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
+var jwtSecret = []byte(getSecret())
 
-// GenerateToken membuat JWT berdasarkan JWTClaims
-func GenerateToken(claims domain.JWTClaims) (string, error) {
+func getSecret() string {
+	secret := os.Getenv("JWT_SECRET")
+
+	return secret
+}
+
+// GenerateToken membuat token JWT dari claims
+func GenerateToken(claims JWTClaims) (string, error) {
 	claims.RegisteredClaims = jwt.RegisteredClaims{
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -22,18 +27,22 @@ func GenerateToken(claims domain.JWTClaims) (string, error) {
 	return token.SignedString(jwtSecret)
 }
 
-// VerifyToken memverifikasi token JWT dan mengembalikan JWTClaims
-func VerifyToken(tokenStr string) (*domain.JWTClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenStr, &domain.JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+func GenerateRefreshToken(claims JWTClaims) (string, error) {
+	claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)) // 7 hari
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+}
+
+// VerifyToken memverifikasi token JWT dan mengembalikan claims jika valid
+func VerifyToken(tokenStr string) (*JWTClaims, error) {
+	claims := &JWTClaims{}
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtSecret, nil
 	})
 
-	if err != nil {
-		return nil, err
+	if err != nil || !token.Valid {
+		return nil, errors.New("invalid or expired token")
 	}
 
-	if claims, ok := token.Claims.(*domain.JWTClaims); ok && token.Valid {
-		return claims, nil
-	}
-	return nil, jwt.ErrTokenInvalidClaims
+	return claims, nil
 }

@@ -8,10 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// JWTAuthMiddleware memverifikasi token JWT sebelum melanjutkan ke handler
 func JWTAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Ambil Authorization header: "Bearer <token>"
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token tidak ditemukan"})
@@ -26,7 +24,6 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Verifikasi token
 		claims, err := auth.VerifyToken(parts[1])
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token tidak valid"})
@@ -34,7 +31,6 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Simpan data user ke context
 		c.Set("user_id", claims.UserID)
 		c.Set("user_email", claims.Email)
 		c.Set("user_role", claims.Role)

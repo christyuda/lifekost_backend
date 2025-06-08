@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"lifekost/auth-services/internal/repository"
-
 	"lifekost/auth-services/pkg/domain"
 	"lifekost/libs/auth"
 	"time"
@@ -17,38 +16,33 @@ type AuthService interface {
 	Login(req domain.LoginRequest) (*domain.LoginResponse, error)
 }
 
-// authService implementasi dari AuthService
 type authService struct {
 	repo repository.UserRepository
 }
 
-// NewAuthService membuat instance baru dari AuthService
 func NewAuthService(repo repository.UserRepository) AuthService {
 	return &authService{repo: repo}
 }
 
-// Register menangani pendaftaran user baru
 func (s *authService) Register(req domain.RegisterRequest) (*domain.User, error) {
-	// Cek apakah email sudah digunakan
 	existingUser, _ := s.repo.FindByEmail(req.Email)
 	if existingUser != nil {
 		return nil, errors.New("email sudah digunakan")
 	}
 
-	// Hash password sebelum disimpan
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
-	// Buat user baru
 	newUser := &domain.User{
+		Username:  req.Username,
 		Email:     req.Email,
 		Password:  string(hashedPassword),
+		Role:      "user",
 		CreatedAt: time.Now(),
 	}
 
-	// Simpan ke database
 	if err := s.repo.Create(newUser); err != nil {
 		return nil, err
 	}
@@ -56,9 +50,7 @@ func (s *authService) Register(req domain.RegisterRequest) (*domain.User, error)
 	return newUser, nil
 }
 
-// Login menangani proses login user
 func (s *authService) Login(req domain.LoginRequest) (*domain.LoginResponse, error) {
-	// Cari user berdasarkan email
 	user, err := s.repo.FindByEmail(req.Email)
 	if err != nil {
 		return nil, err
@@ -67,25 +59,36 @@ func (s *authService) Login(req domain.LoginRequest) (*domain.LoginResponse, err
 		return nil, errors.New("email tidak ditemukan")
 	}
 
-	// Verifikasi password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if err != nil {
 		return nil, errors.New("password salah")
 	}
 
 	// Buat klaim token JWT
-	claims := domain.JWTClaims{
+	claims := auth.JWTClaims{
 		UserID: user.ID,
 		Email:  user.Email,
-		Role:   "user", // bisa disesuaikan jika pakai role
+		Role:   user.Role,
 	}
 
-	// Generate token JWT
-	token, err := auth.GenerateToken(claims)
+	// Generate access token
+	accessToken, err := auth.GenerateToken(claims)
 	if err != nil {
 		return nil, err
 	}
 
-	// Kembalikan response token
-	return &domain.LoginResponse{Token: token}, nil
+	// Generate refresh token
+	refreshToken, err := auth.GenerateRefreshToken(claims)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return response
+	return &domain.LoginResponse{
+		Token:        accessToken,
+		RefreshToken: refreshToken,
+		ExpiresAt:    time.Now().Add(24 * time.Hour), // 1 hari
+		CreatedAt:    time.Now(),
+	}, nil
+
 }

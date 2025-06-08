@@ -2,8 +2,6 @@ package domain
 
 import (
 	"time"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
 // Struct untuk permintaan login
@@ -14,12 +12,17 @@ type LoginRequest struct {
 
 // Struct untuk respons login (berisi token JWT)
 type LoginResponse struct {
-	Token string `json:"token"`
+	Token        string    `json:"token"`         // Token JWT yang
+	RefreshToken string    `json:"refresh_token"` // Token refresh untuk mendapatkan token baru
+	ExpiresAt    time.Time `json:"expires_at"`    // Waktu kedaluwarsa token
+	CreatedAt    time.Time `json:"created_at"`    // Waktu pembuatan token
 }
 
 // Struct untuk permintaan register user baru
 type RegisterRequest struct {
+	Username string `json:"username"`
 	Email    string `json:"email"`
+	Role     string `json:"role"` // Misalnya: "user", "admin"
 	Password string `json:"password"`
 }
 
@@ -29,20 +32,4 @@ type RegisterResponse struct {
 	Email     string    `json:"email"`
 	Role      string    `json:"role"`
 	CreatedAt time.Time `json:"created_at"`
-}
-
-// Struct untuk representasi user di DB
-type User struct {
-	ID        int64     `json:"id"`
-	Email     string    `json:"email"`
-	Password  string    `json:"-"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-// JWTClaims adalah payload yang dikandung di dalam token JWT
-type JWTClaims struct {
-	UserID int64  `json:"user_id"`
-	Email  string `json:"email"`
-	Role   string `json:"role"`
-	jwt.RegisteredClaims
 }
